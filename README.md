@@ -3,7 +3,7 @@ Hz
 
 A simple snippet of code to count occurrences of chars in a file
 
-```sh
+```
 $ ./hz test.txt 
 No. 0	Code: 72	Char: H		Freqency: 1
 No. 1	Code: 101	Char: e		Freqency: 1
