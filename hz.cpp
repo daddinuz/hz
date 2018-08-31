@@ -1,113 +1,51 @@
-#include <algorithm>
-#include <iostream>
+#include <map>
 #include <fstream>
-#include <vector>
+#include <iostream>
 
+static std::map<int, size_t> parse(std::ifstream &stream);
+static void report(const std::map<int, size_t> &symbols);
 
-using namespace std;
+int main(int argc, char **argv) {
+    std::ifstream stream;
 
-/**
- * Declaration
- */
-struct symbol_t
-{
-    unsigned char ch;
-    unsigned short hz;
-};
-
-vector<symbol_t> symbols_vector;
-ifstream file_stream;
-streambuf* stream_buffer;
-
-bool operator < (const symbol_t& a, const symbol_t& b);
-void parse();
-void report();
-
-
-/**
- * Main
- */
-int main(int argc, char** argv)
-{
-    if (argc != 2)
-    {
-        cerr << "Usage: " << argv[0] << " FILE" << endl;
-        exit(1);
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " FILE" << std::endl;
+        return 1;
     }
 
-    file_stream.open(argv[1], ifstream::in);
-
-    if (file_stream)
-    {
-        parse();
-        sort(symbols_vector.begin(), symbols_vector.end());
-        report();
-    }
-    else
-    {
-        cerr << "ERROR: unable to open file: '" <<  argv[1] << "'" << endl;
+    stream.open(argv[1], std::ifstream::in);
+    if (stream) {
+        report(parse(stream));
+        stream.close();
+        return 0;
     }
 
-    file_stream.close();
-    return 0;
+    std::cerr << "ERROR: unable to open file: '" << argv[1] << "'" << std::endl;
+    return 2;
 }
 
-
-/**
- * Implementation
- */
-bool operator < (const symbol_t& a, const symbol_t& b)
-{
-    return a.hz < b.hz;
-}
-
-void parse()
-{
-    size_t i = 0;
-    symbol_t symbol = {'\0', 1};
-
-    stream_buffer = file_stream.rdbuf();
-
-    // Read char by char from the file
-    while (stream_buffer->sgetc() != EOF)
-    {
-        // Get the next symbol in the file
-        symbol.ch = stream_buffer->sbumpc();
-
-        // Scroll symbols_vector to discover if the current symbol already exists
-        for (i = 0; i < symbols_vector.size(); i++)
-        {
-            // if true the symbol already exists in symbols_vector
-            if (symbols_vector[i].ch == symbol.ch)
-            {
-                symbols_vector[i].hz++;  // Increase frequency of the symbol in the symbols_vector
-                break;
-            }
-        }
-
-        // If true, there is a new symbol to add to symbols_vector
-        if (i == symbols_vector.size())
-        {
-            symbols_vector.push_back(symbol);
+std::map<int, size_t> parse(std::ifstream &stream) {
+    std::map<int, size_t> symbols;
+    for (int c = stream.get(); EOF != c; c = stream.get()) {
+        auto it = symbols.find(c);
+        if (it == symbols.end()) {
+            symbols[c] = 1;
+        } else {
+            it->second++;
         }
     }
-
-    return;
+    return symbols;
 }
 
-void report()
-{
-    for (size_t i = 0; i < symbols_vector.size(); i++)
-    {
-        cout << "No. "          << i
-             << "\tCode: "      << (int) symbols_vector[i].ch
-             << "\tChar: "      << (char) ((symbols_vector[i].ch > 32) ? symbols_vector[i].ch : ' ')
-             << "\t\tFreqency: "  << symbols_vector[i].hz
-             << endl;
+void report(const std::map<int, size_t> &symbols) {
+    size_t i = 1;
+    for (const auto &pair : symbols) {
+        const auto ch = pair.first;
+        std::cout << "No: " << i++
+                  << "\tASCII: " << ch
+                  << "\tCh: " << (isprint(ch) ? static_cast<char>(ch) : ' ')
+                  << "\tHz: " << pair.second
+                  << std::endl;
     }
-
-    cout << "\nTotal symbols: " << symbols_vector.size() << endl;
-
-    return;
+    std::cout << std::endl << "Total symbols: " << symbols.size() << std::endl;
 }
-
